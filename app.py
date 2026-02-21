@@ -1,49 +1,38 @@
 import streamlit as st
 import google.generativeai as genai
-import streamlit.components.v1 as components
 
-# Configuração da página
-st.set_page_config(page_title="Athos AI", page_icon="🤖", layout="centered")
+# Configuração básica
+st.set_page_config(page_title="Athos AI", page_icon="🤖")
 
-# --- CONEXÃO COM O CÉREBRO (ATHOS) ---
-# Linha 11
-genai.configure(api_key="SUA_NOVA_CHAVE_AQUI", transport='rest')
-# Linha 12
-model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+# Linha 7: Conexão direta com sua chave nova
+genai.configure(api_key="AIzaSyDeiS0Jzyl6OyrZlyWcr8do54FPO4...", transport='rest')
 
-except Exception as e:
-    st.error(f"Erro ao carregar o modelo: {e}")
+# Linha 10: Definição do modelo
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- INTERFACE ---
-st.image("logo.png", width=80)
 st.title("Athos")
 st.caption("O braço direito do Moisés")
 
-# Inicializa o histórico
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Exibe as mensagens
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Entrada do usuário
-if prompt := st.chat_input("Como posso ajudar, Batera?"):
+if prompt := st.chat_input("Diz aí, Batera?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         try:
-            # Comando de personalidade
-            full_prompt = f"Você é o Athos, uma IA inteligente, sutil e com humor, inspirada no Finch e na Sexta-Feira. Responda de forma direta ao Moisés (Batera): {prompt}"
+            # Personalidade Athos
+            full_prompt = f"Você é o Athos, IA inspirada em Finch e Sexta-Feira. Responda ao Moisés (Batera): {prompt}"
             response = model.generate_content(full_prompt)
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
-            st.error(f"Eita, deu um erro na conexão: {e}")
-            st.info("Dica: Se o erro for 404, precisamos verificar se a sua API Key no Google AI Studio está ativa.")
+            st.error(f"Erro: {e}")
 
-# Salva o que foi feito (Lembrete para o TDAH)
-st.sidebar.info("Moisés, não esquece de salvar as alterações no GitHub! 💾")
+st.sidebar.info("Moisés, salvou no GitHub? 💾")

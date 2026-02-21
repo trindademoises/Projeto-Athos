@@ -7,9 +7,9 @@ st.set_page_config(page_title="Athos", page_icon="🤖")
 
 # Conexões (Recuperando do estado anterior)
 # Substitua pelas suas chaves do Groq e Supabase que você já usava
-GROQ_API_KEY = "SUA_CHAVE_DO_GROQ_AQUI"
-SUPABASE_URL = "SUA_URL_DO_SUPABASE"
-SUPABASE_KEY = "SUA_CHAVE_DO_SUPABASE"
+GROQ_API_KEY = "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"
+SUPABASE_URL = "https://ovbhqxsseerpjkxmodkv.supabase.co"
+SUPABASE_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
 
 client = Groq(api_key=GROQ_API_KEY)
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)

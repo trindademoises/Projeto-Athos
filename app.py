@@ -1,14 +1,19 @@
 import streamlit as st
+import google.generativeai as genai
 import streamlit.components.v1 as components
 
-# --- 1. CONFIGURAÇÃO DA IDENTIDADE ---
+# --- CONFIGURAÇÃO DA IDENTIDADE ---
 st.set_page_config(
-    page_title="Gênesis IA",
+    page_title="Athos IA",
     page_icon="logo.png",
     layout="centered"
 )
 
-# Truque para esconder a barra do navegador no celular (Modo PWA)
+# Configura a Inteligência do Athos
+genai.configure(api_key="AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8")
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+# Truque para transformar em App no Celular
 components.html(
     """
     <script>
@@ -21,29 +26,49 @@ components.html(
     height=0,
 )
 
-# --- 2. ESTILO E LOGO ---
-st.image("logo.png", width=120)
-st.title("Projeto Gênesis")
-st.caption("Evolução constante. Decisões precisas.")
+# --- VISUAL DO TOPO ---
+st.markdown("<style>div.block-container{padding-top:2rem;}</style>", unsafe_allow_html=True)
 
-# --- 3. LÓGICA DO CHAT (SIMPLIFICADA) ---
+col1, col2 = st.columns([1, 4])
+with col1:
+    st.image("logo.png", width=80)
+with col2:
+    st.markdown("### OLÁ! 😁")
+    st.markdown("**Sou o Athos!** Sua IA de decisões precisas e evolução constante.")
+
+st.divider()
+
+# --- LÓGICA DO CHAT ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Exibe o histórico
+# Exibe as mensagens anteriores
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 # Entrada do usuário
 if prompt := st.chat_input("O que faremos hoje, Batera?"):
+    # Adiciona a pergunta do usuário ao histórico
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Resposta do Athos
     with st.chat_message("assistant"):
-        # Aqui o Athos assume a personalidade que definimos
-        response = "Estou processando sua ordem sob a ótica do Gênesis. Direto e sem rodeios. 🤖🚀" 
-        # (Nota: No seu código real, aqui você conecta com a API da Google)
-        st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # Instrução oculta para manter a personalidade que você gosta
+        contexto = (
+            "Você é o Athos, uma IA decisiva. Personalidade: Finch/Sexta-Feira. "
+            "Usuário: Moisés (Batera). Seja direto, decida por ele, use 1-2 emojis. "
+            "Se for a primeira interação, pergunte o nome se não souber."
+        )
+        
+        try:
+            # Chama o Google Gemini
+            response = model.generate_content(f"{contexto} \n\n Pergunta: {prompt}")
+            texto_resposta = response.text
+            st.markdown(texto_resposta)
+            st.session_state.messages.append({"role": "assistant", "content": texto_resposta})
+        except Exception as e:
+            st.error(f"Eita, deu um erro na conexão: {e}")
+

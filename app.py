@@ -45,7 +45,7 @@ if prompt := st.chat_input("Diz aí, Batera?"):
                     },
                     {"role": "user", "content": prompt}
                 ],
-                model="llama3-70b-8192",
+                model="llama-3.3-70b-versatile",
             )
             
             response = chat_completion.choices[0].message.content

@@ -18,26 +18,23 @@ except Exception:
 
 st.title("Athos")
 
-# Inicialização do Histórico na Sessão
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Exibe o histórico na tela
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 # 3. Interação
 if prompt := st.chat_input("Diga..."):
-    # Adiciona a mensagem do usuário ao histórico
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         try:
-            # CONSTRUÇÃO DA MEMÓRIA: Sistema + Histórico Completo
-                        contexto = [
+            # CONSTRUÇÃO DO CONTEXTO
+            contexto = [
                 {
                     "role": "system", 
                     "content": (
@@ -53,13 +50,11 @@ if prompt := st.chat_input("Diga..."):
                     )
                 }
             ]
-
             
-            # Alimenta o contexto com todas as mensagens trocadas até agora
+            # Repare na indentação correta aqui abaixo:
             for m in st.session_state.messages:
                 contexto.append({"role": m["role"], "content": m["content"]})
 
-            # Chamada ao Modelo
             chat_completion = client.chat.completions.create(
                 messages=contexto,
                 model="llama-3.3-70b-versatile",
@@ -69,11 +64,9 @@ if prompt := st.chat_input("Diga..."):
             
             response = chat_completion.choices[0].message.content
             st.markdown(response)
-            
-            # Adiciona a resposta do assistente ao histórico
             st.session_state.messages.append({"role": "assistant", "content": response})
             
         except Exception as e:
             st.error(f"Erro no motor: {e}")
 
-st.sidebar.info("Versão de Fábrica: Memória Ativada & Estilo Finch. 💾")
+st.sidebar.info("Finch Mode: Ativado. 💾")

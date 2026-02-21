@@ -1,15 +1,15 @@
 import streamlit as st
 import google.generativeai as genai
 
-# Configuração da página (Voltando ao original)
+# Configuração da página
 st.set_page_config(page_title="Athos", page_icon="🤖")
 
-# Linha 7: Voltando para a chave que você já tinha e que não dava erro 400
-# RECOLE AQUI A SUA CHAVE QUE COMEÇA COM AIza...
-genai.configure(api_key="COLE_AQUI_A_SUA_CHAVE_ANTIGA")
+# Linha 7: Sua chave real extraída do print
+API_KEY = "AIzaSyDeiS0Jzyl6OyrZlyWcr8do54FPO4U8Mnc"
+genai.configure(api_key=API_KEY)
 
 # Linha 10: Modelo estável
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 st.title("Athos")
 
@@ -27,8 +27,9 @@ if prompt := st.chat_input("Diz aí?"):
 
     with st.chat_message("assistant"):
         try:
-            # Voltando ao prompt original
-            response = model.generate_content(prompt)
+            # Personalidade sutil e direta
+            full_prompt = f"Você é o Athos. Responda ao Moisés (Batera): {prompt}"
+            response = model.generate_content(full_prompt)
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:

@@ -58,7 +58,7 @@ if prompt := st.chat_input("Fale com o Athos..."):
         chat_completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=st.session_state.messages,
-            temperature=0.7
+            temperature=0.5
         )
         full_response = chat_completion.choices[0].message.content
         st.markdown(full_response)

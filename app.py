@@ -29,18 +29,19 @@ if prompt := st.chat_input("Diz aí, Batera?"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        try:
-            # O motor Groq que não dá erro 404
+    try:
+            # Trocamos para o modelo atualizado (Llama 3.1 70B)
             chat_completion = client.chat.completions.create(
                 messages=[
                     {"role": "system", "content": "Você é o Athos, sutil e direto. Ajude o Moisés (Batera)."},
                     {"role": "user", "content": prompt}
                 ],
-                model="llama3-70b-8192",
+                model="llama3-70b-8192",  # Esse é o modelo novo e ativo
             )
             response = chat_completion.choices[0].message.content
             st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "content": response})
+
         except Exception as e:
             st.error(f"Erro: {e}")
 

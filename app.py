@@ -6,14 +6,11 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Athos AI", page_icon="🤖", layout="centered")
 
 # --- CONEXÃO COM O CÉREBRO (ATHOS) ---
-# Linha 11: Configure sua chave aqui
-API_KEY = "AIzaSyDeiS0Jzyl6OyrZIyWcr8do54FPO4mYrno"
-genai.configure(api_key=API_KEY)
+# Linha 11
+genai.configure(api_key="SUA_NOVA_CHAVE_AQUI", transport='rest')
+# Linha 12
+model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
 
-# Linha 14: Diagnóstico e Definição do Modelo
-try:
-    # Tenta usar o modelo mais estável disponível
-    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error(f"Erro ao carregar o modelo: {e}")
 

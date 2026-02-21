@@ -2,75 +2,51 @@ import streamlit as st
 import google.generativeai as genai
 import streamlit.components.v1 as components
 
-# --- CONFIGURAÇÃO DA IDENTIDADE ---
-st.set_page_config(
-    page_title="Athos IA",
-    page_icon="logo.png",
-    layout="centered"
-)
+# Configuração da página
+st.set_page_config(page_title="Athos AI", page_icon="🤖", layout="centered")
 
-# Configura a Inteligência do Athos
-# Linha 11
-genai.configure(api_key="AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8")
-# Linha 12
-model = genai.GenerativeModel('gemini-1.5-flash')
+# --- CONEXÃO COM O CÉREBRO (ATHOS) ---
+# Linha 11: Configure sua chave aqui
+API_KEY = "AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8"
+genai.configure(api_key=API_KEY)
 
-# Truque para transformar em App no Celular
-components.html(
-    """
-    <script>
-    const meta = document.createElement('meta');
-    meta.name = "apple-mobile-web-app-capable";
-    meta.content = "yes";
-    window.parent.document.getElementsByTagName('head')[0].appendChild(meta);
-    </script>
-    """,
-    height=0,
-)
+# Linha 14: Diagnóstico e Definição do Modelo
+try:
+    # Tenta usar o modelo mais estável disponível
+    model = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    st.error(f"Erro ao carregar o modelo: {e}")
 
-# --- VISUAL DO TOPO ---
-st.markdown("<style>div.block-container{padding-top:2rem;}</style>", unsafe_allow_html=True)
+# --- INTERFACE ---
+st.image("logo.png", width=80)
+st.title("Athos")
+st.caption("O braço direito do Moisés")
 
-col1, col2 = st.columns([1, 4])
-with col1:
-    st.image("logo.png", width=80)
-with col2:
-    st.markdown("### OLÁ! 😁")
-    st.markdown("**Sou o Athos!** Sua IA de decisões precisas e evolução constante.")
-
-st.divider()
-
-# --- LÓGICA DO CHAT ---
+# Inicializa o histórico
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Exibe as mensagens anteriores
+# Exibe as mensagens
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 # Entrada do usuário
-if prompt := st.chat_input("O que faremos hoje, Batera?"):
-    # Adiciona a pergunta do usuário ao histórico
+if prompt := st.chat_input("Como posso ajudar, Batera?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Resposta do Athos
     with st.chat_message("assistant"):
-        # Instrução oculta para manter a personalidade que você gosta
-        contexto = (
-            "Você é o Athos, uma IA decisiva. Personalidade: Finch/Sexta-Feira. "
-            "Usuário: Moisés (Batera). Seja direto, decida por ele, use 1-2 emojis. "
-            "Se for a primeira interação, pergunte o nome se não souber."
-        )
-        
         try:
-            # Chama o Google Gemini
-            response = model.generate_content(f"{contexto} \n\n Pergunta: {prompt}")
-            texto_resposta = response.text
-            st.markdown(texto_resposta)
-            st.session_state.messages.append({"role": "assistant", "content": texto_resposta})
+            # Comando de personalidade
+            full_prompt = f"Você é o Athos, uma IA inteligente, sutil e com humor, inspirada no Finch e na Sexta-Feira. Responda de forma direta ao Moisés (Batera): {prompt}"
+            response = model.generate_content(full_prompt)
+            st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
             st.error(f"Eita, deu um erro na conexão: {e}")
+            st.info("Dica: Se o erro for 404, precisamos verificar se a sua API Key no Google AI Studio está ativa.")
 
+# Salva o que foi feito (Lembrete para o TDAH)
+st.sidebar.info("Moisés, não esquece de salvar as alterações no GitHub! 💾")

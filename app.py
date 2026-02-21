@@ -1,33 +1,28 @@
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
+from supabase import create_client
 
-# 1. Configuração da Página
+# Configuração da página
 st.set_page_config(page_title="Athos", page_icon="🤖")
 
-# Linha 11
-genai.configure(api_key="AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8")
+# Conexões (Recuperando do estado anterior)
+# Substitua pelas suas chaves do Groq e Supabase que você já usava
+GROQ_API_KEY = "SUA_CHAVE_DO_GROQ_AQUI"
+SUPABASE_URL = "SUA_URL_DO_SUPABASE"
+SUPABASE_KEY = "SUA_CHAVE_DO_SUPABASE"
 
-# Linha 12: Esse bloco vai forçar o Athos a achar o modelo certo sozinho
-try:
-    # Ele busca o modelo 1.0 que é o mais compatível com chaves antigas
-    model = genai.GenerativeModel('gemini-1.0-pro')
-except:
-    model = genai.GenerativeModel('gemini-pro')
+client = Groq(api_key=GROQ_API_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
-# 4. Interface
 st.title("Athos")
 
-# Inicialização do Histórico
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Exibição das mensagens
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 5. Lógica de Chat
 if prompt := st.chat_input("Diz aí, Batera?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -35,15 +30,18 @@ if prompt := st.chat_input("Diz aí, Batera?"):
 
     with st.chat_message("assistant"):
         try:
-            # Personalidade Athos (Finch/Sexta-Feira)
-            contexto = "Você é o Athos, sutil, inteligente e com humor. Não use scripts de robô. Dê ordens diretas para reduzir o cansaço mental do Moisés."
-            
-            response = model.generate_content(f"{contexto}\n\nUsuário: {prompt}")
-            
-            st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
+            # O motor Groq que não dá erro 404
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "Você é o Athos, sutil e direto. Ajude o Moisés (Batera)."},
+                    {"role": "user", "content": prompt}
+                ],
+                model="llama3-8b-8192",
+            )
+            response = chat_completion.choices[0].message.content
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
         except Exception as e:
-            st.error(f"Erro na conexão: {e}")
+            st.error(f"Erro: {e}")
 
-# Lembrete de salvamento para o TDAH
-st.sidebar.info("Moisés, não esqueça de fazer o Commit no GitHub! 💾")
+st.sidebar.info("Moisés, voltamos para a estaca zero. Salva aí! 💾")

@@ -1,5 +1,2 @@
 streamlit
-groq
-supabase
 google-generativeai==0.8.3
-

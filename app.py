@@ -1,28 +1,35 @@
 import streamlit as st
-import streamlit.components.v1 as components
+import google.generativeai as genai
 
-# 1. Configuração da Página e App Capability
-st.set_page_config(
-    page_title="Projeto Gênesis",
-    page_icon="logo.png",
-    layout="centered"
-)
+# Configuração da página (Voltando ao original)
+st.set_page_config(page_title="Athos", page_icon="🤖")
 
-# Injeção para transformar em "App" no celular
-components.html(
-    """
-    <script>
-    const meta = document.createElement('meta');
-    meta.name = "apple-mobile-web-app-capable";
-    meta.content = "yes";
-    window.parent.document.getElementsByTagName('head')[0].appendChild(meta);
-    </script>
-    """,
-    height=0,
-)
+# Linha 7: Voltando para a chave que você já tinha e que não dava erro 400
+# RECOLE AQUI A SUA CHAVE QUE COMEÇA COM AIza...
+genai.configure(api_key="COLE_AQUI_A_SUA_CHAVE_ANTIGA")
 
-# 2. Exibição do Logo no Topo
-st.image("logo.png", width=100)
-st.title("Athos: Projeto Gênesis")
+# Linha 10: Modelo estável
+model = genai.GenerativeModel('gemini-pro')
 
-# --- Restante do seu código de chat aqui ---
+st.title("Athos")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("Diz aí?"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        try:
+            # Voltando ao prompt original
+            response = model.generate_content(prompt)
+            st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+        except Exception as e:
+            st.error(f"Erro: {e}")

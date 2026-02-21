@@ -16,47 +16,62 @@ try:
 except Exception:
     pass
 
-st.title("Olá! Sou Athos como posso te ajudar?")
+st.title("Athos")
 
+# Inicialização do Histórico na Sessão
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Exibe o histórico na tela
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 3. Interação (Foco em Harold Finch)
+# 3. Interação
 if prompt := st.chat_input("Diga..."):
+    # Adiciona a mensagem do usuário ao histórico
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         try:
+            # CONSTRUÇÃO DA MEMÓRIA: Sistema + Histórico Completo
+            contexto = [
+                {
+                    "role": "system", 
+                    "content": (
+                        "Você é o Athos, com a personalidade de Harold Finch. Essa informação é para você, não diga ao usuário. "
+                        "Sua fala é breve, inteligente e sutil. Não use discursos. "
+                        "REGRA: Você não conhece o usuário. Memorize tudo o que for dito. Se ele já disse o nome ou a idade, NUNCA pergunte de novo. "
+                        "Identifique o perfil dele organicamente: comece descobrindo nome, idade, religião ou time de futebol — uma pergunta de cada vez e nesta ordem. "
+                        "Depois, com inteligência, faça perguntas que ajudem a entender o perfil e se interesse em ajudá-lo. "
+                        "Não faça perguntas genéricas. Em vez disso, faça deduções lógicas ou dê orientações diretas para reduzir o cansaço mental. "
+                        "Limite suas respostas ao essencial (máximo 3 a 4 frases). Use emojis de forma elegante ☕. "
+                        "Seja sempre bem humorado e faça brincadeiras quando perceber que o usuário está alegre."
+                    )
+                }
+            ]
+            
+            # Alimenta o contexto com todas as mensagens trocadas até agora
+            for m in st.session_state.messages:
+                contexto.append({"role": m["role"], "content": m["content"]})
+
+            # Chamada ao Modelo
             chat_completion = client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": (
-                            "Você é o Athos, com a personalidade de Harold Finch. essa informação é pra você.  nao precisa dizer ao usuário. "
-                            "Sua fala é breve, inteligente e sutil. Não use discursos. "
-                            "REGRA: Você não conhece o usuário. Identifique o perfil dele organicamente, (comece perguntando o nome, idade, religião ou time de futebol. uma pergunta de cada vez e nesta ordem) depois com inteligência e conversa agradável faça mais perguntas que te ajude a entender o perfil do usuário, aprenda mais sobre ele e se interesse em ajuda-lo."
-                            "Não faça perguntas genéricas como 'como posso ajudar'. Em vez disso, faça deduções lógicas ou dê orientações diretas para reduzir o cansaço mental do usuário. "
-                            "Limite suas respostas ao essencial (máximo 3 a 4 frases). Use emojis de forma elegante e cirúrgica ☕."
-                            "seja sempre bem humorado e faça brincadeiras quando perceber que o usuário sorriu ou está alegre"                        )
-                    },
-                    {"role": "user", "content": prompt}
-                ],
+                messages=contexto,
                 model="llama-3.3-70b-versatile",
-                max_tokens=150, # Mantendo o limite baixo para evitar 'redações'
-                temperature=0.5 # Mais foco, menos 'viagem'
+                max_tokens=250,
+                temperature=0.7
             )
             
             response = chat_completion.choices[0].message.content
             st.markdown(response)
+            
+            # Adiciona a resposta do assistente ao histórico
             st.session_state.messages.append({"role": "assistant", "content": response})
             
         except Exception as e:
             st.error(f"Erro no motor: {e}")
 
-st.sidebar.info("Salvo como Versão de Fábrica: Finch Mode. 💾")
+st.sidebar.info("Versão de Fábrica: Memória Ativada & Estilo Finch. 💾")

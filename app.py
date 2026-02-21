@@ -13,7 +13,7 @@ st.set_page_config(
 # Linha 11
 genai.configure(api_key="AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8")
 # Linha 12
-model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Truque para transformar em App no Celular
 components.html(

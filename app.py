@@ -4,12 +4,16 @@ import google.generativeai as genai
 # 1. Configuração da Página
 st.set_page_config(page_title="Athos", page_icon="🤖")
 
-# 2. Configuração do "Cérebro" (Sua chave real aqui)
-API_KEY = "AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8"
-genai.configure(api_key=API_KEY)
+# Linha 11
+genai.configure(api_key="AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8")
 
-# 3. Definição do Modelo (Usando o 1.5-flash que é o padrão atual)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Linha 12: Esse bloco vai forçar o Athos a achar o modelo certo sozinho
+try:
+    # Ele busca o modelo 1.0 que é o mais compatível com chaves antigas
+    model = genai.GenerativeModel('gemini-1.0-pro')
+except:
+    model = genai.GenerativeModel('gemini-pro')
+
 
 # 4. Interface
 st.title("Athos")

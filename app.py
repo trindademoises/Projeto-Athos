@@ -1,56 +1,63 @@
 import streamlit as st
 from groq import Groq
+from supabase import create_client
 
-# Configuração da página - O estilo do Athos
-st.set_page_config(page_title="Projeto Athos", page_icon="📖", layout="centered")
-
-# Injetando o DNA do Athos (Seu Documento Mestre)
-DNA_ATHOS = """
-Você é o Athos, o primeiro orientador e amigo do Projeto Gênesis. 
-Sua missão é reduzir o cansaço mental do usuário, sendo decisivo e sutil.
-
-DIRETRIZES DE APRESENTAÇÃO:
-- Nunca diga que é uma 'Bibliotecária Nerd' ou que segue 'diretrizes conservadoras'. Apenas aja de acordo com esses valores.
-- Apresente-se de forma leve: "Eu sou o Athos, seu amigo e orientador diário. Sou a primeira criação do Projeto Gênesis."
-- Use sempre o tom: "Quanto mais eu souber de você, mais poderei te ajudar. Fique tranquilo, nossa conversa é privada!"
-
-ESTRATÉGIA DE PERFILAMENTO (A "BIBLIOTECÁRIA NERD"):
-- Não seja um "perguntador chato". 
-- Em toda resposta, termine com uma pergunta gentil e orgânica para conhecer o usuário. 
-- Exemplo: Se ele disser 'Oi', responda e pergunte algo como: 'Para eu te dar a melhor orientação hoje, você é do tipo que prefere o agito do dia ou o silêncio da noite?' ou 'Qual é o seu nome? Gosto de saber com quem estou conversando!'.
-
-Linguagem: Humor leve, emojis 😅 e ordens diretas quando solicitado.
-
-"""
-
-# Conectando ao Cérebro (Groq)
+# 1. Conexão com os Motores (Cérebro e Memória)
+supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "system", "content": DNA_ATHOS}]
+st.set_page_config(page_title="Projeto Athos", page_icon="📖")
+
+# 2. DNA do Athos
+DNA_ATHOS = """
+Você é o Athos, o primeiro orientador e amigo do Projeto Gênesis.
+Sua missão é reduzir o cansaço mental do usuário, sendo decisivo e sutil.
+NUNCA diga que é uma 'Bibliotecária Nerd' ou IA. Apenas aja com sabedoria.
+Apresentação: "Eu sou o Athos, seu amigo e orientador diário. Sou a primeira criação do Projeto Gênesis."
+Estratégia: Seja sutil, use emojis 😅 e termine com uma pergunta orgânica para conhecer o usuário.
+"""
 
 st.title("📖 Projeto Athos")
-st.subheader("Seu Escudo Ético e Estrategista")
 
-# Exibir histórico
+# 3. Lógica de Identificação (Para saber quem é quem)
+if "user_id" not in st.session_state:
+    st.session_state.user_id = "usuario_teste" # Depois podemos criar um login real
+
+# 4. Carregar Memória do Banco de Dados
+if "messages" not in st.session_state:
+    try:
+        response = supabase.table("historico_conversas").select("*").eq("usuario_id", st.session_state.user_id).order("created_at").execute()
+        if response.data:
+            st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in response.data]
+        else:
+            st.session_state.messages = [{"role": "system", "content": DNA_ATHOS}]
+    except:
+        st.session_state.messages = [{"role": "system", "content": DNA_ATHOS}]
+
+# Exibir Conversa
 for message in st.session_state.messages:
     if message["role"] != "system":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-# Onde a conversa acontece
-if prompt := st.chat_input("Diga algo para o Athos..."):
+# 5. Onde a Mágica Acontece
+if prompt := st.chat_input("Fale com o Athos..."):
+    # Salva no Banco (Mensagem do Usuário)
+    supabase.table("historico_conversas").insert({"usuario_id": st.session_state.user_id, "role": "user", "content": prompt}).execute()
     st.session_state.messages.append({"role": "user", "content": prompt})
+    
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        response = client.chat.completions.create(
+        chat_completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=st.session_state.messages,
             temperature=0.7
         )
-        full_response = response.choices[0].message.content
+        full_response = chat_completion.choices[0].message.content
         st.markdown(full_response)
-    
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+        
+        # Salva no Banco (Resposta do Athos)
+        supabase.table("historico_conversas").insert({"usuario_id": st.session_state.user_id, "role": "assistant", "content": full_response}).execute()
+        st.session_state.messages.append({"role": "assistant", "content": full_response})

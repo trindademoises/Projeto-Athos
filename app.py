@@ -6,7 +6,7 @@ st.set_page_config(page_title="Athos", page_icon="🤖")
 
 # Linha 7: Voltando para a chave que você já tinha e que não dava erro 400
 # RECOLE AQUI A SUA CHAVE QUE COMEÇA COM AIza...
-genai.configure(api_key="COLE_AQUI_A_SUA_CHAVE_ANTIGA")
+genai.configure(api_key="AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8")
 
 # Linha 10: Modelo estável
 model = genai.GenerativeModel('gemini-pro')

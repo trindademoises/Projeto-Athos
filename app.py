@@ -36,7 +36,7 @@ if prompt := st.chat_input("Diz aí, Batera?"):
                     {"role": "system", "content": "Você é o Athos, sutil e direto. Ajude o Moisés (Batera)."},
                     {"role": "user", "content": prompt}
                 ],
-                model="llama3-8b-8192",
+                model="llama3-70b-8192",
             )
             response = chat_completion.choices[0].message.content
             st.markdown(response)

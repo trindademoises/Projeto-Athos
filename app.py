@@ -11,7 +11,7 @@ st.set_page_config(
 
 # Configura a Inteligência do Athos
 genai.configure(api_key="AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8")
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+model = genai.GenerativeModel('gemini-pro')
 # Truque para transformar em App no Celular
 components.html(
     """

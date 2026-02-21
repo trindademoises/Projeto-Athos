@@ -7,7 +7,7 @@ st.set_page_config(page_title="Athos AI", page_icon="🤖", layout="centered")
 
 # --- CONEXÃO COM O CÉREBRO (ATHOS) ---
 # Linha 11: Configure sua chave aqui
-API_KEY = "AIzaSyA60XwLXnK_-qVnV0H5yHUAA6iMizqIxu8"
+API_KEY = "AIzaSyDeiS0Jzyl6OyrZIyWcr8do54FPO4mYrno"
 genai.configure(api_key=API_KEY)
 
 # Linha 14: Diagnóstico e Definição do Modelo

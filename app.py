@@ -2,10 +2,42 @@ import streamlit as st
 from groq import Groq
 from supabase import create_client
 
-# 1. Configuração da Página
-st.set_page_config(page_title="Athos", page_icon="🤖")
+# 1. ESTÉTICA E IDENTIDADE (Aparência do App)
+# Caminho do seu logo no GitHub
+LOGO_URL = "https://raw.githubusercontent.com/Mbatistelli/projeto-athos/main/logo.png"
 
-# 2. Credenciais
+st.set_page_config(page_title="Athos", page_icon=LOGO_URL, layout="centered")
+
+# CSS para esconder o "lixo" visual do Streamlit e formatar o cabeçalho
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stHeader"] {background: rgba(0,0,0,0);}
+    .main-title {
+        text-align: center;
+        font-size: 40px;
+        font-weight: bold;
+        margin-top: -50px;
+    }
+    .sub-title {
+        text-align: center;
+        font-size: 14px;
+        font-style: italic;
+        color: gray;
+        margin-bottom: 20px;
+    }
+    a { text-decoration: none; color: #5dade2; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Montando o Cabeçalho que você pediu
+st.image(LOGO_URL, width=120) # Logo no topo
+st.markdown('<div class="main-title">Athos</div>', unsafe_allow_html=True) # Nome
+st.markdown(f'<div class="sub-title">Para add o Athos na sua tela principal <a href="{st.query_params.get("url", "https://projeto-athos.streamlit.app/")}" target="_self">clique aqui</a>.</div>', unsafe_allow_html=True) # Instrução
+
+# 2. CREDENCIAIS
 GROQ_API_KEY = "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"
 SUPABASE_URL = "https://ovbhqxsseerpjkxmodkv.supabase.co"
 SUPABASE_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
@@ -13,27 +45,45 @@ SUPABASE_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
 client = Groq(api_key=GROQ_API_KEY)
 try:
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-except Exception:
+except:
     pass
 
-st.title("Athos")
+# --- MEMÓRIA PERMANENTE ---
+def carregar_historico():
+    try:
+        res = supabase.table("messages").select("*").order("created_at").execute()
+        return [{"role": m["role"], "content": m["content"]} for m in res.data]
+    except:
+        return []
+
+def salvar_mensagem(role, content):
+    try:
+        supabase.table("messages").insert({"role": role, "content": content}).execute()
+    except:
+        pass
+# ---------------------------
 
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = carregar_historico()
 
+# Exibe o histórico (Usando emojis para manter a leveza, conforme combinado)
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
+    # Definindo o "rosto" do Athos como o emoji de detetive/bibliotecário
+    avatar_icon = "🕵️‍♂️" if message["role"] == "assistant" else None
+    with st.chat_message(message["role"], avatar=avatar_icon):
         st.markdown(message["content"])
 
-# 3. Interação
+# 3. INTERAÇÃO
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
+    salvar_mensagem("user", prompt)
+    
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar="🕵️‍♂️"):
         try:
-            # CONSTRUÇÃO DO CONTEXTO
+            # O SEU PROMPT DE OURO (MANTIDO 100% IGUAL)
             contexto = [
                 {
                     "role": "system", 
@@ -51,7 +101,6 @@ if prompt := st.chat_input("Diga..."):
                 }
             ]
             
-            # Repare na indentação correta aqui abaixo:
             for m in st.session_state.messages:
                 contexto.append({"role": m["role"], "content": m["content"]})
 
@@ -64,9 +113,9 @@ if prompt := st.chat_input("Diga..."):
             
             response = chat_completion.choices[0].message.content
             st.markdown(response)
+            
             st.session_state.messages.append({"role": "assistant", "content": response})
+            salvar_mensagem("assistant", response)
             
         except Exception as e:
             st.error(f"Erro no motor: {e}")
-
-st.sidebar.info("Finch Mode: Ativado. 💾")

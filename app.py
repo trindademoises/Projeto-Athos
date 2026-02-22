@@ -6,6 +6,8 @@ from supabase import create_client
 LOGO_PATH = "logo.png" 
 
 st.set_page_config(page_title="Athos", page_icon=LOGO_PATH, layout="centered")
+# Link para o Manifest (transforma em App)
+st.markdown('<link rel="manifest" href="./manifest.json">', unsafe_allow_html=True)
 
 # CSS Ajustado: Centraliza a logo e remove menus/header
 st.markdown("""

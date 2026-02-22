@@ -24,22 +24,24 @@ st.markdown("""
     }
     .sub-title {
         text-align: center;
-        font-size: 14px;
+        font-size: 18px;
         font-style: italic;
-        color: gray;
+        color: #5dade2; /* O azul bebê/celeste que você gostou */
         margin-bottom: 20px;
     }
-    .sub-title a { color: #5dade2; text-decoration: none; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# Cabeçalho Centralizado com Colunas (Método Seguro)
+# Cabeçalho Centralizado
 col1, col2, col3 = st.columns([1,1,1])
 with col2:
-    st.image(LOGO_PATH, width=150)
+    try:
+        st.image(LOGO_PATH, width=150)
+    except:
+        pass
 
 st.markdown('<div class="main-title">Athos</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Para add o Athos na sua tela principal <a href="https://projeto-athos.streamlit.app/" target="_blank">clique aqui</a>.</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Vamos conversar?</div>', unsafe_allow_html=True)
 
 # 2. CREDENCIAIS
 GROQ_API_KEY = "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"
@@ -54,7 +56,7 @@ if "supabase" not in st.session_state:
     except:
         st.session_state.supabase = None
 
-# --- MEMÓRIA ---
+# --- FUNÇÕES DE MEMÓRIA ---
 def carregar_historico():
     if st.session_state.supabase:
         try:
@@ -65,13 +67,14 @@ def carregar_historico():
 
 def salvar_mensagem(role, content):
     if st.session_state.supabase:
-        try: st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
+        try: 
+            st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
         except: pass
 
 if "messages" not in st.session_state:
     st.session_state.messages = carregar_historico()
 
-# Exibição do Chat (Recuperada)
+# Exibição do Chat
 for message in st.session_state.messages:
     avatar = "🕵️‍♂️" if message["role"] == "assistant" else None
     with st.chat_message(message["role"], avatar=avatar):

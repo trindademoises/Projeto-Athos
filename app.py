@@ -1,4 +1,62 @@
-# 3. INTERAÇÃO E INTELIGÊNCIA (Versão Usuário Final Dinâmico)
+import streamlit as st
+from groq import Groq
+from supabase import create_client
+
+# 1. IDENTIDADE E ESTÉTICA
+LOGO_PATH = "logo.png"
+st.set_page_config(page_title="Athos", page_icon=LOGO_PATH, layout="centered")
+
+st.markdown(f"""
+    <style>
+    #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
+    [data-testid="stImage"] {{ display: flex; justify-content: center; margin: 0 auto; }}
+    .main-title {{ text-align: center; font-size: 45px; font-weight: bold; color: white; }}
+    .sub-title {{ text-align: center; font-size: 18px; font-style: italic; color: #5dade2; margin-bottom: 30px; }}
+    </style>
+    """, unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([1,1,1])
+with col2:
+    try: st.image(LOGO_PATH, width=150)
+    except: pass
+
+st.markdown('<div class="main-title">Athos</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Vamos conversar?</div>', unsafe_allow_html=True)
+
+# 2. CONEXÕES
+GROQ_KEY = "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"
+SB_URL = "https://ovbhqxsseerpjkxmodkv.supabase.co"
+SB_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
+
+client = Groq(api_key=GROQ_KEY)
+
+if "supabase" not in st.session_state:
+    try: st.session_state.supabase = create_client(SB_URL, SB_KEY)
+    except: st.session_state.supabase = None
+
+# Carregamento de Memória Seguro
+def carregar_memoria():
+    if st.session_state.supabase:
+        try:
+            res = st.session_state.supabase.table("messages").select("*").order("created_at", desc=False).limit(30).execute()
+            return [{"role": m["role"], "content": m["content"]} for m in res.data if m.get("content")]
+        except: return []
+    return []
+
+def gravar_memoria(role, content):
+    if st.session_state.supabase:
+        try: st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
+        except: pass
+
+if "messages" not in st.session_state:
+    st.session_state.messages = carregar_memoria()
+
+# Exibição do Chat
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"], avatar="🕵️‍♂️" if msg["role"]=="assistant" else None):
+        st.markdown(msg["content"])
+
+# 3. INTERAÇÃO E INTELIGÊNCIA (FOCO NO USUÁRIO FINAL)
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     gravar_memoria("user", prompt)
@@ -12,12 +70,12 @@ if prompt := st.chat_input("Diga..."):
                 "content": """Você é o Athos. 
                 IDENTIDADE: Se perguntarem quem é você ou quem o criou, responda: 'Sou o Athos, criado pela organização Trindade'.
                 PERSONALIDADE: Fusão de Harold Finch e Sexta-Feira. Sutil, elegante e protetor.
-                MEMÓRIA DINÂMICA: Você não conhece o usuário inicialmente. Analise o histórico atual para descobrir o nome e o perfil de QUEM está falando com você agora. 
-                COMPORTAMENTO: Não use nomes genéricos. Só chame o usuário pelo nome se ele já tiver dito nesta conversa ou se estiver no histórico dele.
-                AÇÃO: Decida pelo usuário para reduzir o cansaço mental. Máximo 3 frases."""
+                DIRETRIZ PARA O USUÁRIO: Você foi projetado para o USUÁRIO FINAL. Não assuma nomes. 
+                Aprenda o nome e perfil de quem fala com você agora através do histórico ou da conversa atual. 
+                Não seja um perguntador chato; seja sutil.
+                AÇÃO: Decida pelo usuário para reduzir o cansaço mental dele. Use no máximo 3 frases."""
             }
             
-            # Contexto de 20 mensagens para ele entender quem é o usuário daquela sessão
             history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-20:]]
             
             completion = client.chat.completions.create(

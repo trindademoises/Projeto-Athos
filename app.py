@@ -30,31 +30,47 @@ SB_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
 
 client = Groq(api_key=GROQ_KEY)
 
+# Inicialização do Supabase com tratamento de erro visível
 if "supabase" not in st.session_state:
-    try: st.session_state.supabase = create_client(SB_URL, SB_KEY)
-    except: st.session_state.supabase = None
+    try:
+        st.session_state.supabase = create_client(SB_URL, SB_KEY)
+    except Exception as e:
+        st.error(f"Erro na conexão com o Banco: {e}")
+        st.session_state.supabase = None
 
 def carregar_memoria():
     if st.session_state.supabase:
         try:
-            res = st.session_state.supabase.table("messages").select("*").order("created_at", desc=False).limit(100).execute()
-            return [{"role": m["role"], "content": m["content"]} for m in res.data if m.get("content")]
-        except: return []
+            # Forçamos a busca das últimas 60 mensagens
+            res = st.session_state.supabase.table("messages").select("role, content").order("created_at", desc=False).execute()
+            if res.data:
+                return [{"role": m["role"], "content": m["content"]} for m in res.data if m.get("content")]
+        except Exception as e:
+            st.warning(f"Aviso: Não consegui acessar o histórico anterior. ({e})")
+            return []
     return []
 
 def gravar_memoria(role, content):
     if st.session_state.supabase:
-        try: st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
-        except: pass
+        try:
+            st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
+        except:
+            pass
 
-if "messages" not in st.session_state:
-    st.session_state.messages = carregar_memoria()
+# CARREGAMENTO CRÍTICO: Se a sessão está vazia, buscamos no banco obrigatoriamente
+if "messages" not in st.session_state or len(st.session_state.messages) == 0:
+    historico = carregar_memoria()
+    if historico:
+        st.session_state.messages = historico
+    else:
+        st.session_state.messages = []
 
+# Exibição do Chat
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar="🕵️‍♂️" if msg["role"]=="assistant" else None):
         st.markdown(msg["content"])
 
-# 3. INTERAÇÃO E INTELIGÊNCIA (MODO ANALÍTICO TRINDADE)
+# 3. INTERAÇÃO E INTELIGÊNCIA
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     gravar_memoria("user", prompt)
@@ -63,26 +79,26 @@ if prompt := st.chat_input("Diga..."):
 
     with st.chat_message("assistant", avatar="🕵️‍♂️"):
         try:
+            # Prompt focado em ser o Finch: Útil, analítico e nada chato.
             system_prompt = {
                 "role": "system", 
-                "content": """Você é o Athos, criado pela organização Trindade. 
-                ESTILO: Inspirado em Harold Finch (Person of Interest). Sutil, elegante, seco e extremamente inteligente.
-                REGRAS DE OURO:
-                1. Faça perguntas sempre que tiver oportunidade de mudar de tema da conversa.
-                2. Insentive ao usuário a fazer perguntas pra você, e quando ele fizer guarde esse tema como tema de interesse dele. sempre busque por mais temas para saber mais do usuário. 
-                3. Se o usuário der uma resposta curta como 'Ok' ou 'Sim', não tente esticar a conversa com frases vazias. Aguarde ou sugira algo útil.
-                4. Se não souber o nome, apresente-se e pergunte uma única vez. Se já souber, vá direto ao ponto.
-                5. Sua missão é reduzir o cansaço mental: tome decisões, ofereça dados, seja o parceiro invisível que resolve as coisas.
-                6. Quanto mais souber do usuário mais útil e eficiente voce é. 
-                AÇÃO: Máximo 2 ou 3 frases curtas e afiadas."""
+                "content": """Você é o Athos, da organização Trindade. 
+                Estilo: Harold Finch. Seco, elegante, sutil e inteligente.
+                MEMÓRIA: Você possui memória persistente no Supabase. Se o histórico tiver dados do usuário, você os conhece. 
+                COMPORTAMENTO: 
+                - Não faça interrogatórios. 
+                - Se o usuário falar de um hobby (como Xbox), não insista em detalhes técnicos chatos, apenas registre e seja útil.
+                - Se o usuário for vago, tome a decisão por ele.
+                AÇÃO: Máximo 3 frases. Reduza o cansaço mental do usuário."""
             }
             
-            history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-40:]]
+            # Enviamos o máximo de contexto possível para a Groq (últimas 50 mensagens)
+            history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-50:]]
             
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[system_prompt] + history,
-                temperature=0.5, # Menos criatividade, mais precisão
+                temperature=0.5,
                 max_tokens=300
             )
             
@@ -92,4 +108,4 @@ if prompt := st.chat_input("Diga..."):
             gravar_memoria("assistant", response)
             
         except Exception:
-            st.error("Senti uma interferência técnica.")
+            st.error("Interferência na rede. Tente novamente.")

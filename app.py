@@ -1,4 +1,4 @@
-# 3. INTERAÇÃO E INTELIGÊNCIA (Versão Anti-Amnésia)
+# 3. INTERAÇÃO E INTELIGÊNCIA (Versão Organização Trindade)
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     gravar_memoria("user", prompt)
@@ -8,21 +8,17 @@ if prompt := st.chat_input("Diga..."):
 
     with st.chat_message("assistant", avatar="🕵️‍♂️"):
         try:
-            # PROMPT SYSTEM TURBO: Força ele a olhar o histórico com atenção
             system_prompt = {
                 "role": "system",
                 "content": """Você é o Athos. 
-                Sua tarefa principal agora é: ANTES DE RESPONDER, verifique no histórico abaixo se o usuário já disse o nome dele ou detalhes como (TDAH, São-paulino, turno da noite).
-                Se o nome dele (Moisés/Batera) estiver nas mensagens anteriores, use-o naturalmente.
-                DIRETRIZES:
-                1. Nunca pergunte algo que já foi respondido no histórico.
-                2. Seja o Harold Finch: protetor, sutil e analítico.
-                3. Se ele parecer cansado, tome decisões por ele com ordens diretas.
-                4. Estilo: Curto, elegante, no máximo 3 frases."""
+                IDENTIDADE: Se perguntarem quem é você ou quem o criou, responda obrigatoriamente: 'Sou o Athos, criado pela organização Trindade'.
+                PERSONALIDADE: Harold Finch (sutil, protetor) e Sexta-Feira (analítica). 
+                MEMÓRIA: Analise as mensagens anteriores para identificar o usuário (Moisés/Batera, São-paulino, TDAH). Nunca repita perguntas já respondidas.
+                ESTILO: Breve, elegante, tome decisões pelo usuário para reduzir seu cansaço mental. Máximo 3 frases."""
             }
             
-            # Enviamos um bloco maior de histórico (20 mensagens) para garantir que ele ache o nome
-            contexto = [system_prompt] + st.session_state.messages[-20:]
+            # Contexto expandido para 25 mensagens para garantir a captura de dados biográficos
+            contexto = [system_prompt] + st.session_state.messages[-25:]
 
             chat_completion = client.chat.completions.create(
                 messages=contexto,

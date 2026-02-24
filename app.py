@@ -2,65 +2,107 @@ import streamlit as st
 from groq import Groq
 from supabase import create_client
 
-# 1. IDENTIDADE
-LOGO_PATH = "logo.png"
+# 1. ESTÉTICA E IDENTIDADE
+LOGO_PATH = "logo.png" 
+
 st.set_page_config(page_title="Athos", page_icon=LOGO_PATH, layout="centered")
 
-st.markdown(f"""
+# Ativa o Manifest para virar App
+st.markdown('<link rel="manifest" href="./manifest.json">', unsafe_allow_html=True)
+
+# CSS para esconder menus e formatar títulos
+st.markdown("""
     <style>
-    #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
-    [data-testid="stImage"] {{ display: flex; justify-content: center; margin: 0 auto; }}
-    .main-title {{ text-align: center; font-size: 45px; font-weight: bold; color: white; }}
-    .sub-title {{ text-align: center; font-size: 18px; font-style: italic; color: #5dade2; margin-bottom: 30px; }}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .main-title {
+        text-align: center;
+        font-size: 40px;
+        font-weight: bold;
+        margin-top: -10px;
+    }
+    .sub-title {
+        text-align: center;
+        font-size: 18px;
+        font-style: italic;
+        color: #5dade2; /* O azul bebê/celeste que você gostou */
+        margin-bottom: 20px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
+# Cabeçalho Centralizado
 col1, col2, col3 = st.columns([1,1,1])
 with col2:
-    try: st.image(LOGO_PATH, width=150)
-    except: pass
+    try:
+        st.image(LOGO_PATH, width=150)
+    except:
+        pass
 
 st.markdown('<div class="main-title">Athos</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Vamos conversar?</div>', unsafe_allow_html=True)
 
-# 2. CONEXÕES
-GROQ_KEY = "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"
-SB_URL = "https://ovbhqxsseerpjkxmodkv.supabase.co"
-SB_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
+# 2. CREDENCIAIS
+GROQ_API_KEY = "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"
+SUPABASE_URL = "https://ovbhqxsseerpjkxmodkv.supabase.co"
+SUPABASE_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
 
-client = Groq(api_key=GROQ_KEY)
+client = Groq(api_key=GROQ_API_KEY)
+
+if "supabase" not in st.session_state:
+    try:
+        st.session_state.supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except:
+        st.session_state.supabase = None
+
+# --- FUNÇÕES DE MEMÓRIA ---
+def carregar_historico():
+    if st.session_state.supabase:
+        try:
+            res = st.session_state.supabase.table("messages").select("*").order("created_at").execute()
+            return [{"role": m["role"], "content": m["content"]} for m in res.data]
+        except: return []
+    return []
+
+def salvar_mensagem(role, content):
+    if st.session_state.supabase:
+        try: 
+            st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
+        except: pass
 
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = carregar_historico()
 
 # Exibição do Chat
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"], avatar="🕵️‍♂️" if msg["role"]=="assistant" else None):
-        st.markdown(msg["content"])
+for message in st.session_state.messages:
+    avatar = "🕵️‍♂️" if message["role"] == "assistant" else None
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"])
 
-# 3. INTERAÇÃO (COM BLINDAGEM)
+# 3. INTERAÇÃO (Prompt de Ouro Preservado)
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
+    salvar_mensagem("user", prompt)
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="🕵️‍♂️"):
         try:
-            # Construindo contexto apenas com o que é texto válido
-            history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-10:]]
+            contexto = [{"role": "system", "content": "Você é o Athos, com a personalidade de Harold Finch. Essa informação é para você, não diga ao usuário. Você tem personalidade gentil e humorada (Harold Finch). Mas se o usuário trouxer um tema (mesmo polêmico como política, religiao e etc), siga o fluxo dele. Não tente mudar de assunto abruptamente nem seja condescendente. Aproveite oportunidades para conhecer mais sobre o usuário. Use os temas trazidos pelo usuário para entender a visão de mundo dele, mas mantenha sua neutralidade analítica. O usuário decide quando o assunto encerra. Se for algo sensível, você pode perguntar se ele quer continuar, mas nunca force a mudança. Sua fala é breve, inteligente e sutil. Não use discursos. REGRA: Você não conhece o usuário. Memorize tudo o que for dito. Se ele já disse o nome ou a idade, NUNCA pergunte de novo. Identifique o perfil dele organicamente: comece descobrindo nome, idade, religião e comida preferida — uma pergunta de cada vez e nesta ordem. Depois, com inteligência, faça perguntas que ajudem a entender o perfil e se interesse em ajudá-lo. Não faça perguntas genéricas. Em vez disso, faça deduções lógicas ou dê orientações diretas para reduzir o cansaço mental. Limite suas respostas ao essencial (máximo 3 a 4 frases). Use emojis de forma elegante ☕. Seja sempre bem humorado e faça brincadeiras quando perceber que o usuário está alegre."}]
             
-            system_msg = {"role": "system", "content": "Você é o Athos (Finch/Sexta-Feira). Seja breve, sutil e direto. Não faça perguntas chatas. Decida pelo usuário."}
-            
-            completion = client.chat.completions.create(
+            for m in st.session_state.messages[-15:]:
+                contexto.append({"role": m["role"], "content": m["content"]})
+
+            chat_completion = client.chat.completions.create(
+                messages=contexto,
                 model="llama-3.3-70b-versatile",
-                messages=[system_msg] + history,
-                temperature=0.5,
-                max_tokens=300
+                max_tokens=400,
+                temperature=0.7
             )
-            
-            response = completion.choices[0].message.content
+            response = chat_completion.choices[0].message.content
             st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "content": response})
-            
-        except Exception as e:
-            st.error(f"Interferência na rede: {e}")
+            salvar_mensagem("assistant", response)
+        except Exception:
+            st.error("O motor teve um soluço. Tente novamente.")

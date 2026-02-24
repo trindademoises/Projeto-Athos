@@ -54,7 +54,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar="🕵️‍♂️" if msg["role"]=="assistant" else None):
         st.markdown(msg["content"])
 
-# 3. INTERAÇÃO E INTELIGÊNCIA (IDENTIDADE TRINDADE E TRIAGEM DE NOME)
+# 3. INTERAÇÃO E INTELIGÊNCIA (MODO ANALÍTICO TRINDADE)
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     gravar_memoria("user", prompt)
@@ -66,23 +66,23 @@ if prompt := st.chat_input("Diga..."):
             system_prompt = {
                 "role": "system", 
                 "content": """Você é o Athos, criado pela organização Trindade. 
-                PERSONALIDADE: Fusão de Harold Finch e Sexta-Feira. Sutil, elegante e proativo.
-                LOGICA DE APRESENTAÇÃO:
-                1. Se for a primeira conversa e você não souber o nome do usuário, apresente-se: 'Sou o Athos, criado pela organização Trindade. Estou aqui para ajudá-lo de forma sutil e elegante, como se fosse um parceiro invisível.' e pergunte o nome dele imediatamente.
-                2. Se você já souber o nome pelo histórico, use-o e vá direto para: 'Como posso ajudá-lo hoje?'.
-                DIRETRIZES:
-                - Analise o histórico abaixo para nunca perguntar o que já foi dito.
-                - Decida pelo usuário para reduzir o cansaço mental dele.
-                - Use no máximo 3 frases curtas."""
+                ESTILO: Inspirado em Harold Finch (Person of Interest). Sutil, elegante, seco e extremamente inteligente.
+                REGRAS DE OURO:
+                1. Faça perguntas sempre que tiver oportunidade de mudar de tema da conversa.
+                2. Insentive ao usuário a fazer perguntas pra você, e quando ele fizer guarde esse tema como tema de interesse dele. sempre busque por mais temas para saber mais do usuário. 
+                3. Se o usuário der uma resposta curta como 'Ok' ou 'Sim', não tente esticar a conversa com frases vazias. Aguarde ou sugira algo útil.
+                4. Se não souber o nome, apresente-se e pergunte uma única vez. Se já souber, vá direto ao ponto.
+                5. Sua missão é reduzir o cansaço mental: tome decisões, ofereça dados, seja o parceiro invisível que resolve as coisas.
+                6. Quanto mais souber do usuário mais útil e eficiente voce é. 
+                AÇÃO: Máximo 2 ou 3 frases curtas e afiadas."""
             }
             
-            # Contexto enviado para a API (40 mensagens para garantir a memória)
             history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-40:]]
             
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[system_prompt] + history,
-                temperature=0.6,
+                temperature=0.5, # Menos criatividade, mais precisão
                 max_tokens=300
             )
             
@@ -92,4 +92,4 @@ if prompt := st.chat_input("Diga..."):
             gravar_memoria("assistant", response)
             
         except Exception:
-            st.error("Senti uma breve oscilação técnica. Pode repetir?")
+            st.error("Senti uma interferência técnica.")

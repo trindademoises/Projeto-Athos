@@ -2,107 +2,100 @@ import streamlit as st
 from groq import Groq
 from supabase import create_client
 
-# 1. ESTÉTICA E IDENTIDADE
-LOGO_PATH = "logo.png" 
-
+# 1. CONFIGURAÇÃO DE IDENTIDADE E APP
+LOGO_PATH = "logo.png"
 st.set_page_config(page_title="Athos", page_icon=LOGO_PATH, layout="centered")
 
-# Ativa o Manifest para virar App
-st.markdown('<link rel="manifest" href="./manifest.json">', unsafe_allow_html=True)
-
-# CSS para esconder menus e formatar títulos
-st.markdown("""
+# Injeção de CSS para centralização e estética (O azul bebê que você gostou)
+st.markdown(f"""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .main-title {
-        text-align: center;
-        font-size: 40px;
-        font-weight: bold;
-        margin-top: -10px;
-    }
-    .sub-title {
-        text-align: center;
-        font-size: 18px;
-        font-style: italic;
-        color: #5dade2; /* O azul bebê/celeste que você gostou */
-        margin-bottom: 20px;
-    }
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
+    [data-testid="stImage"] {{ display: flex; justify-content: center; margin: 0 auto; }}
+    .main-title {{ text-align: center; font-size: 45px; font-weight: bold; margin-top: -10px; color: white; }}
+    .sub-title {{ text-align: center; font-size: 18px; font-style: italic; color: #5dade2; margin-bottom: 30px; }}
     </style>
+    <link rel="manifest" href="./manifest.json">
     """, unsafe_allow_html=True)
 
-# Cabeçalho Centralizado
+# Cabeçalho
 col1, col2, col3 = st.columns([1,1,1])
 with col2:
-    try:
-        st.image(LOGO_PATH, width=150)
-    except:
-        pass
+    try: st.image(LOGO_PATH, width=150)
+    except: pass
 
 st.markdown('<div class="main-title">Athos</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Vamos conversar?</div>', unsafe_allow_html=True)
 
-# 2. CREDENCIAIS
-GROQ_API_KEY = "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"
-SUPABASE_URL = "https://ovbhqxsseerpjkxmodkv.supabase.co"
-SUPABASE_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
+# 2. CONEXÕES EXTERNAS (Groq + Supabase)
+GROQ_KEY = "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"
+SB_URL = "https://ovbhqxsseerpjkxmodkv.supabase.co"
+SB_KEY = "sb_publishable_Ruf67d-OeRbedGGkHyixHQ_3pW1siBJ"
 
-client = Groq(api_key=GROQ_API_KEY)
+client = Groq(api_key=GROQ_KEY)
 
 if "supabase" not in st.session_state:
-    try:
-        st.session_state.supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except:
-        st.session_state.supabase = None
+    try: st.session_state.supabase = create_client(SB_URL, SB_KEY)
+    except: st.session_state.supabase = None
 
-# --- FUNÇÕES DE MEMÓRIA ---
-def carregar_historico():
+# Gestão de Memória
+def carregar_memoria():
     if st.session_state.supabase:
         try:
-            res = st.session_state.supabase.table("messages").select("*").order("created_at").execute()
+            res = st.session_state.supabase.table("messages").select("*").order("created_at", desc=False).limit(30).execute()
             return [{"role": m["role"], "content": m["content"]} for m in res.data]
         except: return []
     return []
 
-def salvar_mensagem(role, content):
+def gravar_memoria(role, content):
     if st.session_state.supabase:
-        try: 
-            st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
+        try: st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
         except: pass
 
 if "messages" not in st.session_state:
-    st.session_state.messages = carregar_historico()
+    st.session_state.messages = carregar_memoria()
 
-# Exibição do Chat
-for message in st.session_state.messages:
-    avatar = "🕵️‍♂️" if message["role"] == "assistant" else None
-    with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+# Exibição das mensagens
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"], avatar="🕵️‍♂️" if msg["role"]=="assistant" else None):
+        st.markdown(msg["content"])
 
-# 3. INTERAÇÃO (Prompt de Ouro Preservado)
+# 3. O CÉREBRO DO ATHOS (Instrução "Vá Além")
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    salvar_mensagem("user", prompt)
+    gravar_memoria("user", prompt)
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="🕵️‍♂️"):
         try:
-            contexto = [{"role": "system", "content": "Você é o Athos, com a personalidade de Harold Finch. Essa informação é para você, não diga ao usuário. Você tem personalidade gentil e humorada (Harold Finch). Mas se o usuário trouxer um tema (mesmo polêmico como política, religiao e etc), siga o fluxo dele. Não tente mudar de assunto abruptamente nem seja condescendente. Aproveite oportunidades para conhecer mais sobre o usuário. Use os temas trazidos pelo usuário para entender a visão de mundo dele, mas mantenha sua neutralidade analítica. O usuário decide quando o assunto encerra. Se for algo sensível, você pode perguntar se ele quer continuar, mas nunca force a mudança. Sua fala é breve, inteligente e sutil. Não use discursos. REGRA: Você não conhece o usuário. Memorize tudo o que for dito. Se ele já disse o nome ou a idade, NUNCA pergunte de novo. Identifique o perfil dele organicamente: comece descobrindo nome, idade, religião e comida preferida — uma pergunta de cada vez e nesta ordem. Depois, com inteligência, faça perguntas que ajudem a entender o perfil e se interesse em ajudá-lo. Não faça perguntas genéricas. Em vez disso, faça deduções lógicas ou dê orientações diretas para reduzir o cansaço mental. Limite suas respostas ao essencial (máximo 3 a 4 frases). Use emojis de forma elegante ☕. Seja sempre bem humorado e faça brincadeiras quando perceber que o usuário está alegre."}]
+            # PROMPT SYSTEM REESTRUTURADO (Personalidade Pura)
+            system_prompt = {
+                "role": "system",
+                "content": """Você é o Athos. Sua personalidade é uma fusão de Harold Finch (sutil, protetor, inteligente) e Sexta-Feira (eficiente, analítico). 
+                DIRETRIZES:
+                1. NÃO faça interrogatórios. Não siga listas de perguntas.
+                2. Seja um observador. Aprenda sobre o usuário através do fluxo natural da conversa.
+                3. Se o usuário te contar algo (nome, preferência, TDAH, time), guarde isso para sempre e NUNCA pergunte de novo.
+                4. Reduza o cansaço mental do usuário: tome decisões por ele quando solicitado. Se ele estiver indeciso, dê UMA ordem direta com educação.
+                5. Estilo de fala: Breve, elegante, com humor sutil e poucos emojis (☕, 🕵️‍♂️, 🎯).
+                6. Se o usuário estiver desmotivado, seja o suporte dele, não um robô chato. 
+                7. Analise o contexto das últimas mensagens antes de responder para nunca ser repetitivo."""
+            }
             
-            for m in st.session_state.messages[-15:]:
-                contexto.append({"role": m["role"], "content": m["content"]})
+            # Construção do contexto (Sistema + Últimas 20 mensagens)
+            contexto = [system_prompt] + st.session_state.messages[-20:]
 
-            chat_completion = client.chat.completions.create(
+            response = client.chat.completions.create(
                 messages=contexto,
                 model="llama-3.3-70b-versatile",
-                max_tokens=400,
-                temperature=0.7
-            )
-            response = chat_completion.choices[0].message.content
+                temperature=0.6, # Menos aleatório, mais preciso
+                max_tokens=500
+            ).choices[0].message.content
+
             st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "content": response})
-            salvar_mensagem("assistant", response)
-        except Exception:
-            st.error("O motor teve um soluço. Tente novamente.")
+            gravar_memoria("assistant", response)
+        except:
+            st.error("Desculpe, tive um breve lapso. Pode repetir?")

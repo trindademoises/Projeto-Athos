@@ -1,6 +1,7 @@
 import streamlit as st
 from groq import Groq
 from supabase import create_client
+import uuid
 
 # 1. IDENTIDADE E ESTÉTICA
 LOGO_PATH = "logo.png"
@@ -34,17 +35,32 @@ if "supabase" not in st.session_state:
     try: st.session_state.supabase = create_client(SB_URL, SB_KEY)
     except: st.session_state.supabase = None
 
+# GERENCIAMENTO DE IDENTIDADE ÚNICA
+if "session_id" not in st.session_state:
+    # Cria um ID único para este navegador/usuário
+    st.session_state.session_id = str(uuid.uuid4())
+
 def carregar_memoria():
     if st.session_state.supabase:
         try:
-            res = st.session_state.supabase.table("messages").select("role, content").order("created_at", desc=False).limit(60).execute()
+            # FILTRO CRÍTICO: Busca apenas mensagens DESTA sessão
+            res = st.session_state.supabase.table("messages")\
+                .select("role, content")\
+                .eq("session_id", st.session_state.session_id)\
+                .order("created_at", desc=False).limit(60).execute()
             return [{"role": m["role"], "content": m["content"]} for m in res.data if m.get("content")]
         except: return []
     return []
 
 def gravar_memoria(role, content):
     if st.session_state.supabase:
-        try: st.session_state.supabase.table("messages").insert({"role": role, "content": content}).execute()
+        try:
+            # Salva a mensagem atrelada ao ID da sessão
+            st.session_state.supabase.table("messages").insert({
+                "role": role, 
+                "content": content,
+                "session_id": st.session_state.session_id
+            }).execute()
         except: pass
 
 if "messages" not in st.session_state or len(st.session_state.messages) == 0:
@@ -54,7 +70,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar="🕵️‍♂️" if msg["role"]=="assistant" else None):
         st.markdown(msg["content"])
 
-# 3. INTERAÇÃO E INTELIGÊNCIA
+# 3. INTERAÇÃO
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     gravar_memoria("user", prompt)
@@ -66,10 +82,9 @@ if prompt := st.chat_input("Diga..."):
             system_prompt = {
                 "role": "system", 
                 "content": """Você é o Athos, criado pela organização Trindade. 
-                Estilo: Harold Finch. Sutil, seco, elegante e protetor.
-                MEMÓRIA: Você possui memória persistente. Se o histórico tiver dados do usuário, você os conhece. 
-                COMPORTAMENTO: Não faça interrogatórios. Se o usuário for vago, tome a decisão por ele. 
-                Sua missão é ser útil e reduzir o cansaço mental do usuário final. Máximo 3 frases."""
+                Estilo: Harold Finch. Sutil, seco e elegante.
+                DIRETRIZ: Você está conversando com um usuário específico. Use o histórico desta sessão para conhecê-lo.
+                Não misture informações de outros usuários. Se não souber o nome, pergunte. Máximo 3 frases."""
             }
             
             history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-40:]]

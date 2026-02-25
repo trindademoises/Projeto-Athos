@@ -24,7 +24,7 @@ client = Groq(api_key=GROQ_KEY)
 if "supabase" not in st.session_state:
     st.session_state.supabase = create_client(SB_URL, SB_KEY)
 
-# --- IDENTIFICAÇÃO ---
+# --- IDENTIFICAÇÃO DE USUÁRIO ---
 if "user_token" not in st.session_state:
     st.session_state.user_token = str(uuid.uuid4())
 
@@ -57,7 +57,7 @@ if len(st.session_state.messages) == 0:
     st.session_state.messages.append({"role": "assistant", "content": msg})
     salvar_mensagem("assistant", msg, st.session_state.user_token)
 
-# 4. RESPOSTA (COM REGRAS RÍGIDAS)
+# 4. RESPOSTA (EQUILIBRADA)
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     salvar_mensagem("user", prompt, st.session_state.user_token)
@@ -66,18 +66,20 @@ if prompt := st.chat_input("Diga..."):
 
     with st.chat_message("assistant", avatar="🕵️‍♂️"):
         system_prompt = (
-            "Você é o Athos, da organização Trindade. Estilo Harold Finch: sutil, seco e inteligente. "
-            "REGRA ABSOLUTA: Responda em no máximo 3 frases curtas. Seja direto ao ponto. "
-            "Use o nome do usuário se souber. Reduza o cansaço mental dele dando ordens ou direções claras."
+            "Você é o Athos, criado pela Organização Trindade. Sua personalidade é inspirada em Harold Finch: "
+            "inteligente, sutil, moderado e genuinamente interessado no usuário. "
+            "DIRETRIZES: Não seja seco demais como um delegado, nem prolixo. Mantenha um diálogo equilibrado. "
+            "Faça perguntas orgânicas para conhecer o usuário. Se não houver assunto, mostre-se disposto e curioso. "
+            "Tome decisões por ele para reduzir o cansaço mental, mas com a elegância de um amigo inteligente."
         )
         
-        history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages[-15:]]
+        history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages[-20:]]
         
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": system_prompt}] + history,
-            temperature=0.3, # Baixa temperatura = Respostas mais curtas e menos inventivas
-            max_tokens=100    # Limite rigoroso de texto
+            temperature=0.6, 
+            max_tokens=400 
         )
         
         res_text = completion.choices[0].message.content

@@ -1,7 +1,6 @@
 import streamlit as st
 from groq import Groq
 from supabase import create_client
-import uuid
 
 # 1. IDENTIDADE E ESTÉTICA
 LOGO_PATH = "logo.png"
@@ -35,36 +34,37 @@ if "supabase" not in st.session_state:
     try: st.session_state.supabase = create_client(SB_URL, SB_KEY)
     except: st.session_state.supabase = None
 
-# GERENCIAMENTO DE IDENTIDADE ÚNICA
-if "session_id" not in st.session_state:
-    # Cria um ID único para este navegador/usuário
-    st.session_state.session_id = str(uuid.uuid4())
+# --- GERENCIAMENTO DE USUÁRIO VIA URL ---
+# Pega o nome do usuário da URL (ex: ?u=moises)
+query_params = st.query_params
+user_id = query_params.get("u", "default_user") # Se não tiver nada, cai no default
 
-def carregar_memoria():
+def carregar_memoria(uid):
     if st.session_state.supabase:
         try:
-            # FILTRO CRÍTICO: Busca apenas mensagens DESTA sessão
+            # SÓ BUSCA MENSAGENS DO USUÁRIO DA URL
             res = st.session_state.supabase.table("messages")\
                 .select("role, content")\
-                .eq("session_id", st.session_state.session_id)\
-                .order("created_at", desc=False).limit(60).execute()
+                .eq("session_id", uid)\
+                .order("created_at", desc=False).limit(50).execute()
             return [{"role": m["role"], "content": m["content"]} for m in res.data if m.get("content")]
         except: return []
     return []
 
-def gravar_memoria(role, content):
+def gravar_memoria(role, content, uid):
     if st.session_state.supabase:
         try:
-            # Salva a mensagem atrelada ao ID da sessão
             st.session_state.supabase.table("messages").insert({
                 "role": role, 
                 "content": content,
-                "session_id": st.session_state.session_id
+                "session_id": uid
             }).execute()
         except: pass
 
-if "messages" not in st.session_state or len(st.session_state.messages) == 0:
-    st.session_state.messages = carregar_memoria()
+# Inicializa as mensagens apenas para este usuário específico
+if "messages" not in st.session_state or st.session_state.get("last_uid") != user_id:
+    st.session_state.messages = carregar_memoria(user_id)
+    st.session_state.last_uid = user_id
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar="🕵️‍♂️" if msg["role"]=="assistant" else None):
@@ -73,7 +73,7 @@ for msg in st.session_state.messages:
 # 3. INTERAÇÃO
 if prompt := st.chat_input("Diga..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    gravar_memoria("user", prompt)
+    gravar_memoria("user", prompt, user_id)
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -83,11 +83,11 @@ if prompt := st.chat_input("Diga..."):
                 "role": "system", 
                 "content": """Você é o Athos, criado pela organização Trindade. 
                 Estilo: Harold Finch. Sutil, seco e elegante.
-                DIRETRIZ: Você está conversando com um usuário específico. Use o histórico desta sessão para conhecê-lo.
-                Não misture informações de outros usuários. Se não souber o nome, pergunte. Máximo 3 frases."""
+                Você está conversando com um usuário específico através de uma sessão isolada.
+                Use apenas o histórico visível. Máximo 3 frases."""
             }
             
-            history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-40:]]
+            history = [{"role": m["role"], "content": str(m["content"])} for m in st.session_state.messages[-30:]]
             
             completion = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -99,7 +99,7 @@ if prompt := st.chat_input("Diga..."):
             response = completion.choices[0].message.content
             st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "content": response})
-            gravar_memoria("assistant", response)
+            gravar_memoria("assistant", response, user_id)
             
         except Exception:
-            st.error("Senti uma breve oscilação.")
+            st.error("Interferência na rede.")
